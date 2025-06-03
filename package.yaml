@@ -25,6 +25,9 @@ dependencies:
   - warp
   - aeson
   - wai
+  - megaparsec
+  - text
+  - scientific
 
 ghc-options:
 - -Wall

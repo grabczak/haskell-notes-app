@@ -25,6 +25,7 @@ source-repository head
 
 library
   exposed-modules:
+      JSON
       Lib
   other-modules:
       Paths_haskell_notes_app
@@ -36,8 +37,11 @@ library
   build-depends:
       aeson
     , base >=4.7 && <5
+    , megaparsec
+    , scientific
     , servant
     , servant-server
+    , text
     , wai
     , warp
   default-language: Haskell2010
@@ -55,8 +59,11 @@ executable haskell-notes-app-exe
       aeson
     , base >=4.7 && <5
     , haskell-notes-app
+    , megaparsec
+    , scientific
     , servant
     , servant-server
+    , text
     , wai
     , warp
   default-language: Haskell2010
@@ -75,8 +82,11 @@ test-suite haskell-notes-app-test
       aeson
     , base >=4.7 && <5
     , haskell-notes-app
+    , megaparsec
+    , scientific
     , servant
     , servant-server
+    , text
     , wai
     , warp
   default-language: Haskell2010
