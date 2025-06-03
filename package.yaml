@@ -64,3 +64,6 @@ tests:
     - -with-rtsopts=-N
     dependencies:
     - haskell-notes-app
+    - HUnit >= 1.6
+    - test-framework >= 0.8
+    - test-framework-hunit >= 0.3

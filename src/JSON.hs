@@ -22,6 +22,7 @@ data JValue
   | JString String
   | JArray [JValue]
   | JObject [(String, JValue)]
+  deriving (Eq)
 
 instance Show JValue where
   show value = case value of

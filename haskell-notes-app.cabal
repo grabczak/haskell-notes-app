@@ -79,13 +79,16 @@ test-suite haskell-notes-app-test
       test
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      aeson
+      HUnit >=1.6
+    , aeson
     , base >=4.7 && <5
     , haskell-notes-app
     , megaparsec
     , scientific
     , servant
     , servant-server
+    , test-framework >=0.8
+    , test-framework-hunit >=0.3
     , text
     , wai
     , warp
