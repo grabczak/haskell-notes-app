@@ -7,7 +7,7 @@ module JSON (
 
 import Text.Megaparsec
 import Text.Megaparsec.Char
-import Text.Megaparsec.Char.Lexer (scientific)
+import Text.Megaparsec.Char.Lexer (scientific, signed)
 import Data.List (intercalate)
 import Data.Void
 import Data.Text (Text)
@@ -55,7 +55,9 @@ jsonBool = do
   pure $ JBool (b == "true")
 
 jsonNumber :: Parser JValue
-jsonNumber = do JNumber <$> scientific
+jsonNumber = do
+  n <- signed (pure ()) scientific
+  pure $ JNumber n
 
 jsonString :: Parser JValue
 jsonString = do
