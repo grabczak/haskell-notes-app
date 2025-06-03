@@ -1,6 +1,9 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module JSON where
+module JSON (
+    JValue(..),
+    jsonValue,
+) where
 
 import Text.Megaparsec
 import Text.Megaparsec.Char
@@ -29,15 +32,6 @@ instance Show JValue where
     JString s -> show s
     JArray arr -> "[" ++ intercalate ", " (map show arr) ++ "]"
     JObject obj -> "{" ++ intercalate ", " (map (\(k, v) -> "\"" ++ k ++ "\": " ++ show v) obj) ++ "}"
-
-example :: JValue
-example = JObject
-  [ ("name", JString "Alice")
-  , ("age", JNumber 30)
-  , ("isStudent", JBool False)
-  , ("courses", JArray [JString "Math", JString "Science"])
-  , ("address", JObject [("city", JString "Wonderland"), ("zip", JNumber 12345)])
-  ]
 
 jsonValue :: Parser JValue
 jsonValue = choice
