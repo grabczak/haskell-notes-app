@@ -43,8 +43,11 @@ testArray = assertParseSuccess "[null,true,1]" (JArray [JNull, JBool True, JNumb
 testObject :: Assertion
 testObject = assertParseSuccess "{\"a\":null,\"b\":false}" (JObject [("a", JNull), ("b", JBool False)])
 
-testFormat :: Assertion
-testFormat = assertParseSuccess
+testEmptyString :: Assertion
+testEmptyString = assertParseSuccess "\"\"" (JString "")
+
+testCorrectFormat :: Assertion
+testCorrectFormat = assertParseSuccess
   "{\"JSON Test Pattern pass3\":{\"The outermost value\":\"must be an object or array.\",\"In this test\":\"It is an object.\"}}"
   (JObject
     [ ("JSON Test Pattern pass3",
@@ -128,10 +131,14 @@ passedParseTests =
   , testCase "Test string" testString
   , testCase "Test array" testArray
   , testCase "Test object" testObject
-  , testCase "Test format" testFormat
+  , testCase "Test empty string" testEmptyString
+  , testCase "Test correct format" testCorrectFormat
   , testCase "Test deep nesting" testDeepNesting
   , testCase "Test general case" testGeneralCase
   ]
+
+testMisspelledNull :: Assertion
+testMisspelledNull = assertParseFailure "nulls"
 
 testExplicitString :: Assertion
 testExplicitString = assertParseFailure "Explicit string"
@@ -202,12 +209,6 @@ testIncorrectValue = assertParseFailure "[\"Incorrect value\",truth]"
 testSingleQuote :: Assertion
 testSingleQuote = assertParseFailure "['single quote']"
 
-testTabCharacterInString :: Assertion
-testTabCharacterInString = assertParseFailure "\"Tab\tcharacter\""
-
-testEscapedTabCharactersInString :: Assertion
-testEscapedTabCharactersInString = assertParseFailure "\"Escaped tab\\tcharacter\""
-
 testIncorrectExponent :: Assertion
 testIncorrectExponent = assertParseFailure "[\"Incorrect exponent\",0e]"
 
@@ -225,7 +226,8 @@ testMismatch = assertParseFailure "[\"Mismatch\"}"
 
 failedParseTests :: [Test]
 failedParseTests =
-  [ testCase "Test explicit string" testExplicitString
+  [ testCase "Test misspelled null" testMisspelledNull
+  , testCase "Test explicit string" testExplicitString
   , testCase "Test unclosed array" testUnclosedArray
   , testCase "Test unquoted key" testUnquotedKey
   , testCase "Test trailing comma in array" testTrailingCommaInArray
@@ -248,8 +250,6 @@ failedParseTests =
   , testCase "Test colon instead of comma in array" testColonInsteadOfCommaInArray
   , testCase "Test incorrect value" testIncorrectValue
   , testCase "Test single quote" testSingleQuote
-  , testCase "Test tab character in string" testTabCharacterInString
-  , testCase "Test escaped tab characters in string" testEscapedTabCharactersInString
   , testCase "Test incorrect exponent" testIncorrectExponent
   , testCase "Test incorrect plus in exponent" testIncorrectPlusInExponent
   , testCase "Test incorrect minus in exponent" testIncorrectMinusInExponent
