@@ -7,7 +7,7 @@ module JSON (
 
 import Text.Megaparsec
 import Text.Megaparsec.Char
-import Text.Megaparsec.Char.Lexer (scientific, signed)
+import Text.Megaparsec.Char.Lexer (scientific, signed, charLiteral)
 import Data.List (intercalate)
 import Data.Void
 import Data.Text (Text)
@@ -62,8 +62,7 @@ jsonNumber = do
 jsonString :: Parser JValue
 jsonString = do
   _ <- char '"'
-  content <- many (noneOf ['"'])
-  _ <- char '"'
+  content <- manyTill charLiteral (char '"')
   pure $ JString content
 
 jsonArray :: Parser JValue
