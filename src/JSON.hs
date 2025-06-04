@@ -3,6 +3,7 @@
 module JSON (
     JValue(..),
     fromJSON,
+    toJSON,
 ) where
 
 import Text.Megaparsec
@@ -91,3 +92,12 @@ fromJSON = do
   value <- jsonValue
   eof
   pure value
+
+toJSON :: JValue -> String
+toJSON JNull = "null"
+toJSON (JBool True) = "true"
+toJSON (JBool False) = "false"
+toJSON (JNumber n) = show n
+toJSON (JString s) = "\"" ++ s ++ "\""
+toJSON (JArray arr) = "[" ++ intercalate "," (map toJSON arr) ++ "]"
+toJSON (JObject obj) = "{" ++ intercalate "," (map (\(k, v) -> "\"" ++ k ++ "\":" ++ toJSON v) obj) ++ "}"
