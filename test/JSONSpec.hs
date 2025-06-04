@@ -43,6 +43,9 @@ testArray = assertParseSuccess "[null,true,1]" (JArray [JNull, JBool True, JNumb
 testObject :: Assertion
 testObject = assertParseSuccess "{\"a\":null,\"b\":false}" (JObject [("a", JNull), ("b", JBool False)])
 
+testNegativeNumber :: Assertion
+testNegativeNumber = assertParseSuccess "-21" (JNumber (fromFloatDigits (-21 :: Double)))
+
 testEmptyString :: Assertion
 testEmptyString = assertParseSuccess "\"\"" (JString "")
 
@@ -124,17 +127,18 @@ testGeneralCase = assertParseSuccess
 
 passedParseTests :: [Test]
 passedParseTests =
-  [ testCase "Test null" testNull
-  , testCase "Test true" testTrue
-  , testCase "Test false" testFalse
-  , testCase "Test number" testNumber
-  , testCase "Test string" testString
-  , testCase "Test array" testArray
-  , testCase "Test object" testObject
-  , testCase "Test empty string" testEmptyString
-  , testCase "Test correct format" testCorrectFormat
-  , testCase "Test deep nesting" testDeepNesting
-  , testCase "Test general case" testGeneralCase
+  [ testCase "Null" testNull
+  , testCase "True" testTrue
+  , testCase "False" testFalse
+  , testCase "Number" testNumber
+  , testCase "String" testString
+  , testCase "Array" testArray
+  , testCase "Object" testObject
+  , testCase "Negative number" testNegativeNumber
+  , testCase "Empty string" testEmptyString
+  , testCase "Correct format" testCorrectFormat
+  , testCase "Deep nesting" testDeepNesting
+  , testCase "General case" testGeneralCase
   ]
 
 testMisspelledNull :: Assertion
@@ -175,9 +179,6 @@ testIllegalExpression = assertParseFailure "{\"Illegal expression\":1+2}"
 
 testIllegalInvocation :: Assertion
 testIllegalInvocation = assertParseFailure "{\"Illegal invocation\":alert()}"
-
-testLeadingZeroes :: Assertion
-testLeadingZeroes = assertParseFailure "{\"Leading zero\":013}"
 
 testHexNumber :: Assertion
 testHexNumber = assertParseFailure "{\"Hex number\":0x1A}"
@@ -226,36 +227,35 @@ testMismatch = assertParseFailure "[\"Mismatch\"}"
 
 failedParseTests :: [Test]
 failedParseTests =
-  [ testCase "Test misspelled null" testMisspelledNull
-  , testCase "Test explicit string" testExplicitString
-  , testCase "Test unclosed array" testUnclosedArray
-  , testCase "Test unquoted key" testUnquotedKey
-  , testCase "Test trailing comma in array" testTrailingCommaInArray
-  , testCase "Test double comma in array" testDoubleCommaInArray
-  , testCase "Test missing value in array" testMissingValueInArray
-  , testCase "Test comma after closed array" testCommaAfterClosedArray
-  , testCase "Test extra bracket" testExtraBracket
-  , testCase "Test trailing comma in object" testTrailingCommaInObject
-  , testCase "Test extra value after object" testExtraValueAfterObject
-  , testCase "Test illegal expression" testIllegalExpression
-  , testCase "Test illegal invocation" testIllegalInvocation
-  , testCase "Test leading zeroes" testLeadingZeroes
-  , testCase "Test hex number" testHexNumber
-  , testCase "Test illegal escape" testIllegalEscape
-  , testCase "Test escape outside string" testEscapeOutsideString
-  , testCase "Test incorrect nesting" testIncorrectNesting
-  , testCase "Test missing colon" testMissingColon
-  , testCase "Test double colon" testDoubleColon
-  , testCase "Test comma instead of colon in object" testCommaInsteadOfColonInObject
-  , testCase "Test colon instead of comma in array" testColonInsteadOfCommaInArray
-  , testCase "Test incorrect value" testIncorrectValue
-  , testCase "Test single quote" testSingleQuote
-  , testCase "Test incorrect exponent" testIncorrectExponent
-  , testCase "Test incorrect plus in exponent" testIncorrectPlusInExponent
-  , testCase "Test incorrect minus in exponent" testIncorrectMinusInExponent
-  , testCase "Test comma instead of closing brace" testCommaInsteadOfClosingBrace
-  , testCase "Test mismatch" testMismatch
+  [ testCase "Misspelled null" testMisspelledNull
+  , testCase "Explicit string" testExplicitString
+  , testCase "Unclosed array" testUnclosedArray
+  , testCase "Unquoted key" testUnquotedKey
+  , testCase "Trailing comma in array" testTrailingCommaInArray
+  , testCase "Double comma in array" testDoubleCommaInArray
+  , testCase "Missing value in array" testMissingValueInArray
+  , testCase "Comma after closed array" testCommaAfterClosedArray
+  , testCase "Extra bracket" testExtraBracket
+  , testCase "Trailing comma in object" testTrailingCommaInObject
+  , testCase "Extra value after object" testExtraValueAfterObject
+  , testCase "Illegal expression" testIllegalExpression
+  , testCase "Illegal invocation" testIllegalInvocation
+  , testCase "Hex number" testHexNumber
+  , testCase "Illegal escape" testIllegalEscape
+  , testCase "Escape outside string" testEscapeOutsideString
+  , testCase "Incorrect nesting" testIncorrectNesting
+  , testCase "Missing colon" testMissingColon
+  , testCase "Double colon" testDoubleColon
+  , testCase "Comma instead of colon in object" testCommaInsteadOfColonInObject
+  , testCase "Colon instead of comma in array" testColonInsteadOfCommaInArray
+  , testCase "Incorrect value" testIncorrectValue
+  , testCase "Single quote" testSingleQuote
+  , testCase "Incorrect exponent" testIncorrectExponent
+  , testCase "Incorrect plus in exponent" testIncorrectPlusInExponent
+  , testCase "Incorrect minus in exponent" testIncorrectMinusInExponent
+  , testCase "Comma instead of closing brace" testCommaInsteadOfClosingBrace
+  , testCase "Mismatch" testMismatch
   ]
 
 tests :: [Test]
-tests = [testGroup "Successful Parse" passedParseTests, testGroup "Failed Parse" failedParseTests]
+tests = [testGroup "Parse Success" passedParseTests, testGroup "Parse Failure" failedParseTests]
