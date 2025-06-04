@@ -2,7 +2,7 @@
 
 module JSON (
     JValue(..),
-    jsonValue,
+    fromJSON,
 ) where
 
 import Text.Megaparsec
@@ -86,3 +86,9 @@ jsonObject = do
   pairs <- jsonPair `sepBy` char ','
   _ <- char '}'
   pure $ JObject pairs
+
+fromJSON :: Parser JValue
+fromJSON = do
+  value <- jsonValue
+  eof
+  pure value
