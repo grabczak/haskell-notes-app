@@ -72,6 +72,7 @@ test-suite haskell-notes-app-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
+      JSONSpec
       Paths_haskell_notes_app
   autogen-modules:
       Paths_haskell_notes_app
