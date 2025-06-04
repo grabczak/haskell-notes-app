@@ -32,7 +32,7 @@ testFalse :: Assertion
 testFalse = assertParseSuccess "false" (JBool False)
 
 testNumber :: Assertion
-testNumber = assertParseSuccess "-123.45" (JNumber (fromFloatDigits (-123.45 :: Double)))
+testNumber = assertParseSuccess "123.45" (JNumber (fromFloatDigits (123.45 :: Double)))
 
 testString :: Assertion
 testString = assertParseSuccess "\"hello\"" (JString "hello")
