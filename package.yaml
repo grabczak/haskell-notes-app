@@ -1,13 +1,13 @@
-name:                haskell-notes-app
-version:             0.1.0.0
-github:              "grabczak/haskell-notes-app"
-license:             BSD-3-Clause
-author:              "Kacper Grabczak"
-copyright:           "2025 Kacper Grabczak"
+name: haskell-notes-app
+version: 0.1.0.0
+github: "grabczak/haskell-notes-app"
+license: BSD-3-Clause
+author: "Kacper Grabczak"
+copyright: "2025 Kacper Grabczak"
 
 extra-source-files:
-- README.md
-- CHANGELOG.md
+  - README.md
+  - CHANGELOG.md
 
 # Metadata used when publishing your package
 # synopsis:            Short description of your package
@@ -16,7 +16,7 @@ extra-source-files:
 # To avoid duplicated efforts in documentation and dealing with the
 # complications of embedding Haddock markup inside cabal files, it is
 # common to point users to the README.md file.
-description:         Please see the README on GitHub at <https://github.com/grabczak/haskell-notes-app#readme>
+description: Please see the README on GitHub at <https://github.com/grabczak/haskell-notes-app#readme>
 
 dependencies:
   - base >= 4.7 && < 5
@@ -30,40 +30,42 @@ dependencies:
   - scientific
 
 ghc-options:
-- -Wall
-- -Wcompat
-- -Widentities
-- -Wincomplete-record-updates
-- -Wincomplete-uni-patterns
-- -Wmissing-export-lists
-- -Wmissing-home-modules
-- -Wpartial-fields
-- -Wredundant-constraints
+  - -Wall
+  - -Wcompat
+  - -Widentities
+  - -Wincomplete-record-updates
+  - -Wincomplete-uni-patterns
+  - -Wmissing-export-lists
+  - -Wmissing-home-modules
+  - -Wpartial-fields
+  - -Wredundant-constraints
 
 library:
   source-dirs: src
 
 executables:
   haskell-notes-app-exe:
-    main:                Main.hs
-    source-dirs:         app
+    main: Main.hs
+    source-dirs: app
     ghc-options:
-    - -threaded
-    - -rtsopts
-    - -with-rtsopts=-N
+      - -threaded
+      - -rtsopts
+      - -with-rtsopts=-N
     dependencies:
-    - haskell-notes-app
+      - haskell-notes-app
 
 tests:
   haskell-notes-app-test:
-    main:                Spec.hs
-    source-dirs:         test
+    main: Spec.hs
+    source-dirs: test
     ghc-options:
-    - -threaded
-    - -rtsopts
-    - -with-rtsopts=-N
+      - -threaded
+      - -rtsopts
+      - -with-rtsopts=-N
     dependencies:
-    - haskell-notes-app
-    - HUnit >= 1.6
-    - test-framework >= 0.8
-    - test-framework-hunit >= 0.3
+      - haskell-notes-app
+      - HUnit >= 1.6
+      - QuickCheck >= 2.14
+      - test-framework >= 0.8
+      - test-framework-hunit >= 0.3
+      - test-framework-quickcheck2 >= 0.3

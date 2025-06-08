@@ -1,12 +1,25 @@
 module JSONCodecSpec (tests) where
 
-import Data.Scientific (fromFloatDigits)
+import Data.Scientific (Scientific, fromFloatDigits)
 import Test.Framework (Test, testGroup)
 import Test.Framework.Providers.HUnit (testCase)
+import Test.Framework.Providers.QuickCheck2 (testProperty)
 import Test.HUnit (Assertion, assertEqual, assertFailure)
+import Test.QuickCheck (
+  Arbitrary (arbitrary),
+  Gen,
+  Property,
+  Testable (property),
+  elements,
+  listOf,
+  oneof,
+  resize,
+  sized,
+  (===),
+ )
 import Text.Megaparsec (errorBundlePretty)
 
-import JSONCodec (JValue (..), fromJSON)
+import JSONCodec (JValue (..), fromJSON, toJSON)
 
 assertParseSuccess :: String -> JValue -> Assertion
 assertParseSuccess input expected =
@@ -258,5 +271,44 @@ failedParseTests =
   , testCase "Mismatch" testMismatch
   ]
 
+newtype ArbJValue = ArbJValue {unArbJValue :: JValue}
+  deriving (Show, Eq)
+
+instance Arbitrary ArbJValue where
+  arbitrary = ArbJValue <$> sized arbJValue
+
+arbJValue :: Int -> Gen JValue
+arbJValue n
+  | n <= 0 = oneof [pure JNull, JBool <$> arbitrary, JNumber <$> arbitraryScientific, JString <$> arbitraryString]
+  | otherwise =
+      oneof
+        [ pure JNull
+        , JBool <$> arbitrary
+        , JNumber <$> arbitraryScientific
+        , JString <$> arbitraryString
+        , JArray <$> resize (n `div` 2) (listOf (arbJValue (n `div` 2)))
+        , JObject <$> resize (n `div` 2) (listOf ((,) <$> arbitraryString <*> arbJValue (n `div` 2)))
+        ]
+
+arbitraryString :: Gen String
+arbitraryString = listOf $ elements (['a' .. 'z'] ++ ['A' .. 'Z'] ++ ['0' .. '9'] ++ " -_")
+
+arbitraryScientific :: Gen Scientific
+arbitraryScientific = fromFloatDigits <$> (arbitrary :: Gen Double)
+
+propertyRoundtrip :: ArbJValue -> Property
+propertyRoundtrip (ArbJValue v) =
+  let s = toJSON v
+   in case fromJSON s of
+        Right v' -> v' === v
+        Left _ -> property False
+
+qcTests :: [Test]
+qcTests = [testProperty "fromJSON . toJSON ≡ id" propertyRoundtrip]
+
 tests :: [Test]
-tests = [testGroup "Parse Success" passedParseTests, testGroup "Parse Failure" failedParseTests]
+tests =
+  [ testGroup "Parse Success" passedParseTests
+  , testGroup "Parse Failure" failedParseTests
+  , testGroup "Identity" qcTests
+  ]
