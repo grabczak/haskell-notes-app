@@ -1,7 +1,8 @@
 module Main (main) where
 
 import Test.Framework (defaultMain)
-import JSONSpec (tests)
+
+import JSONCodecSpec (tests)
 
 main :: IO ()
 main = defaultMain tests

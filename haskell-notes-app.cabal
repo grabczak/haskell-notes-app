@@ -25,7 +25,7 @@ source-repository head
 
 library
   exposed-modules:
-      JSON
+      JSONCodec
       Lib
   other-modules:
       Paths_haskell_notes_app
@@ -72,7 +72,7 @@ test-suite haskell-notes-app-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
-      JSONSpec
+      JSONCodecSpec
       Paths_haskell_notes_app
   autogen-modules:
       Paths_haskell_notes_app

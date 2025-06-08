@@ -1,26 +1,24 @@
-module JSONSpec (tests) where
+module JSONCodecSpec (tests) where
 
+import Data.Scientific (fromFloatDigits)
 import Test.Framework (Test, testGroup)
 import Test.Framework.Providers.HUnit (testCase)
 import Test.HUnit (Assertion, assertEqual, assertFailure)
+import Text.Megaparsec (errorBundlePretty)
 
-import Data.Text (pack)
-import Text.Megaparsec (errorBundlePretty, parse)
-import Data.Scientific (fromFloatDigits)
-
-import JSON (JValue(..), fromJSON)
+import JSONCodec (JValue (..), fromJSON)
 
 assertParseSuccess :: String -> JValue -> Assertion
 assertParseSuccess input expected =
-  case parse fromJSON "" (pack input) of
-    Left err -> assertFailure $ "Parse error:\n" ++ errorBundlePretty err
-    Right result -> assertEqual ("Parsing: " ++ input) expected result
+  case fromJSON input of
+    Left err -> assertFailure $ "\n" ++ errorBundlePretty err
+    Right result -> assertEqual ("Parsing:  " ++ input) expected result
 
 assertParseFailure :: String -> Assertion
 assertParseFailure input =
-  case parse fromJSON "" (pack input) of
-    Left _  -> return ()
-    Right result -> assertFailure $ "    Expected parse failure, but got: " ++ show result
+  case fromJSON input of
+    Left _ -> return ()
+    Right result -> assertFailure $ "Expected parse error. Instead got: " ++ show result
 
 testNull :: Assertion
 testNull = assertParseSuccess "null" JNull
@@ -50,80 +48,83 @@ testEmptyString :: Assertion
 testEmptyString = assertParseSuccess "\"\"" (JString "")
 
 testCorrectFormat :: Assertion
-testCorrectFormat = assertParseSuccess
-  "{\"JSON Test Pattern pass3\":{\"The outermost value\":\"must be an object or array.\",\"In this test\":\"It is an object.\"}}"
-  (JObject
-    [ ("JSON Test Pattern pass3",
-      JObject
-        [ ("The outermost value", JString "must be an object or array.")
-        , ("In this test", JString "It is an object.")
+testCorrectFormat =
+  assertParseSuccess
+    "{\"JSON Test Pattern pass3\":{\"The outermost value\":\"must be an object or array.\",\"In this test\":\"It is an object.\"}}"
+    ( JObject
+        [
+          ( "JSON Test Pattern pass3"
+          , JObject
+              [ ("The outermost value", JString "must be an object or array.")
+              , ("In this test", JString "It is an object.")
+              ]
+          )
         ]
     )
-    ]
-  )
 
 testDeepNesting :: Assertion
 testDeepNesting = assertParseSuccess "[[[[[\"Deep nesting\"]]]]]" (JArray [JArray [JArray [JArray [JArray [JString "Deep nesting"]]]]])
 
 testGeneralCase :: Assertion
-testGeneralCase = assertParseSuccess
-  "[\"JSON Test Pattern pass1\",{\"object with 1 member\":[\"array with 1 element\"]},{},[],-42,true,false,null,{\"integer\":1234567890,\"real\":-9876.54321,\"e\":1.23456789e-13,\"E\":1.23456789e+34,\"\":2.3456789012e+76,\"zero\":0,\"one\":1,\"space\":\" \",\"quote\":\"\\\"\",\"backslash\":\"\\\\\",\"controls\":\"\\b\\f\\n\\r\\t\",\"slash\":\"/ & /\",\"alpha\":\"abcdefghijklmnopqrstuvwyz\",\"ALPHA\":\"ABCDEFGHIJKLMNOPQRSTUVWYZ\",\"digit\":\"0123456789\",\"0123456789\":\"digit\",\"special\":\"`1~!@#$%^&*()_+-={':[,]}|;.</>?\",\"hex\":\"ģ䕧覫췯屴屴\",\"true\":true,\"false\":false,\"null\":null,\"array\":[],\"object\":{},\"address\":\"50 St. James Street\",\"url\":\"http://www.JSON.org/\",\"comment\":\"// /* <!-- --\",\"# -- --> */\":\" \",\" s p a c e d \":[1,2,3,4,5,6,7],\"compact\":[1,2,3,4,5,6,7],\"jsontext\":\"{\\\"object with 1 member\\\":[\\\"array with 1 element\\\"]}\",\"quotes\":\"&#34; \\\" %22 0x22 034 &#x22;\",\"/\\\\\\\"쫾몾ꮘﳞ볚屴\\b\\f\\n\\r\\t`1~!@#$%^&*()_+-=[]{}|;:',./<>?\":\"A key can be any string\"},0.5,98.6,99.44,1066,10,1,0.1,1,2,2,\"rosebud\"]"
-  (JArray
-    [ JString "JSON Test Pattern pass1"
-    , JObject [("object with 1 member", JArray [JString "array with 1 element"])]
-    , JObject []
-    , JArray []
-    , JNumber (-42)
-    , JBool True
-    , JBool False
-    , JNull
-    , JObject
-      [ ("integer", JNumber 1234567890)
-      , ("real", JNumber (fromFloatDigits (-9876.54321 :: Double)))
-      , ("e", JNumber (fromFloatDigits (1.23456789e-13 :: Double)))
-      , ("E", JNumber (fromFloatDigits (1.23456789e+34 :: Double)))
-      , ("", JNumber (fromFloatDigits (2.3456789012e+76 :: Double)))
-      , ("zero", JNumber 0)
-      , ("one", JNumber 1)
-      , ("space", JString " ")
-      , ("quote", JString "\"")
-      , ("backslash", JString "\\")
-      , ("controls", JString "\b\f\n\r\t")
-      , ("slash", JString "/ & /")
-      , ("alpha", JString "abcdefghijklmnopqrstuvwyz")
-      , ("ALPHA", JString "ABCDEFGHIJKLMNOPQRSTUVWYZ")
-      , ("digit", JString "0123456789")
-      , ("0123456789", JString "digit")
-      , ("special", JString "`1~!@#$%^&*()_+-={':[,]}|;.</>?")
-      , ("hex", JString "ģ䕧覫췯屴屴")
-      , ("true", JBool True)
-      , ("false", JBool False)
-      , ("null", JNull)
-      , ("array", JArray [])
-      , ("object", JObject [])
-      , ("address", JString "50 St. James Street")
-      , ("url", JString "http://www.JSON.org/")
-      , ("comment", JString "// /* <!-- --")
-      , ("# -- --> */", JString " ")
-      , (" s p a c e d ", JArray (map JNumber [1,2,3,4,5,6,7]))
-      , ("compact", JArray (map JNumber [1,2,3,4,5,6,7]))
-      , ("jsontext", JString "{\"object with 1 member\":[\"array with 1 element\"]}")
-      , ("quotes", JString "&#34; \" %22 0x22 034 &#x22;")
-      , ("/\\\"쫾몾ꮘﳞ볚屴\b\f\n\r\t`1~!@#$%^&*()_+-=[]{}|;:',./<>?", JString "A key can be any string")
-      ]
-    , JNumber (fromFloatDigits (0.5 :: Double))
-    , JNumber (fromFloatDigits (98.6 :: Double))
-    , JNumber (fromFloatDigits (99.44 :: Double))
-    , JNumber 1066
-    , JNumber 10
-    , JNumber 1
-    , JNumber (fromFloatDigits (0.1 :: Double))
-    , JNumber 1
-    , JNumber 2
-    , JNumber 2
-    , JString "rosebud"
-    ]
-  )
+testGeneralCase =
+  assertParseSuccess
+    "[\"JSON Test Pattern pass1\",{\"object with 1 member\":[\"array with 1 element\"]},{},[],-42,true,false,null,{\"integer\":1234567890,\"real\":-9876.54321,\"e\":1.23456789e-13,\"E\":1.23456789e+34,\"\":2.3456789012e+76,\"zero\":0,\"one\":1,\"space\":\" \",\"quote\":\"\\\"\",\"backslash\":\"\\\\\",\"controls\":\"\\b\\f\\n\\r\\t\",\"slash\":\"/ & /\",\"alpha\":\"abcdefghijklmnopqrstuvwyz\",\"ALPHA\":\"ABCDEFGHIJKLMNOPQRSTUVWYZ\",\"digit\":\"0123456789\",\"0123456789\":\"digit\",\"special\":\"`1~!@#$%^&*()_+-={':[,]}|;.</>?\",\"hex\":\"ģ䕧覫췯屴屴\",\"true\":true,\"false\":false,\"null\":null,\"array\":[],\"object\":{},\"address\":\"50 St. James Street\",\"url\":\"http://www.JSON.org/\",\"comment\":\"// /* <!-- --\",\"# -- --> */\":\" \",\" s p a c e d \":[1,2,3,4,5,6,7],\"compact\":[1,2,3,4,5,6,7],\"jsontext\":\"{\\\"object with 1 member\\\":[\\\"array with 1 element\\\"]}\",\"quotes\":\"&#34; \\\" %22 0x22 034 &#x22;\",\"/\\\\\\\"쫾몾ꮘﳞ볚屴\\b\\f\\n\\r\\t`1~!@#$%^&*()_+-=[]{}|;:',./<>?\":\"A key can be any string\"},0.5,98.6,99.44,1066,10,1,0.1,1,2,2,\"rosebud\"]"
+    ( JArray
+        [ JString "JSON Test Pattern pass1"
+        , JObject [("object with 1 member", JArray [JString "array with 1 element"])]
+        , JObject []
+        , JArray []
+        , JNumber (-42)
+        , JBool True
+        , JBool False
+        , JNull
+        , JObject
+            [ ("integer", JNumber 1234567890)
+            , ("real", JNumber (fromFloatDigits (-9876.54321 :: Double)))
+            , ("e", JNumber (fromFloatDigits (1.23456789e-13 :: Double)))
+            , ("E", JNumber (fromFloatDigits (1.23456789e+34 :: Double)))
+            , ("", JNumber (fromFloatDigits (2.3456789012e+76 :: Double)))
+            , ("zero", JNumber 0)
+            , ("one", JNumber 1)
+            , ("space", JString " ")
+            , ("quote", JString "\"")
+            , ("backslash", JString "\\")
+            , ("controls", JString "\b\f\n\r\t")
+            , ("slash", JString "/ & /")
+            , ("alpha", JString "abcdefghijklmnopqrstuvwyz")
+            , ("ALPHA", JString "ABCDEFGHIJKLMNOPQRSTUVWYZ")
+            , ("digit", JString "0123456789")
+            , ("0123456789", JString "digit")
+            , ("special", JString "`1~!@#$%^&*()_+-={':[,]}|;.</>?")
+            , ("hex", JString "ģ䕧覫췯屴屴")
+            , ("true", JBool True)
+            , ("false", JBool False)
+            , ("null", JNull)
+            , ("array", JArray [])
+            , ("object", JObject [])
+            , ("address", JString "50 St. James Street")
+            , ("url", JString "http://www.JSON.org/")
+            , ("comment", JString "// /* <!-- --")
+            , ("# -- --> */", JString " ")
+            , (" s p a c e d ", JArray (map JNumber [1, 2, 3, 4, 5, 6, 7]))
+            , ("compact", JArray (map JNumber [1, 2, 3, 4, 5, 6, 7]))
+            , ("jsontext", JString "{\"object with 1 member\":[\"array with 1 element\"]}")
+            , ("quotes", JString "&#34; \" %22 0x22 034 &#x22;")
+            , ("/\\\"쫾몾ꮘﳞ볚屴\b\f\n\r\t`1~!@#$%^&*()_+-=[]{}|;:',./<>?", JString "A key can be any string")
+            ]
+        , JNumber (fromFloatDigits (0.5 :: Double))
+        , JNumber (fromFloatDigits (98.6 :: Double))
+        , JNumber (fromFloatDigits (99.44 :: Double))
+        , JNumber 1066
+        , JNumber 10
+        , JNumber 1
+        , JNumber (fromFloatDigits (0.1 :: Double))
+        , JNumber 1
+        , JNumber 2
+        , JNumber 2
+        , JString "rosebud"
+        ]
+    )
 
 passedParseTests :: [Test]
 passedParseTests =
