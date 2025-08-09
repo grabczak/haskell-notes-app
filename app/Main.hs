@@ -12,38 +12,54 @@ import Database.SQLite.Simple (
   execute_,
   field,
   open,
+  query,
   query_,
  )
 import GHC.Generics (Generic)
-import Web.Scotty (get, json, liftIO, pathParam, post, scotty, text)
+import Web.Scotty (ActionM, get, json, liftIO, pathParam, post, scotty, text)
 
--- Model
-data User = User Int Text deriving (Show, Generic)
+data User = User
+  { id :: Int
+  , name :: Text
+  , email :: Text
+  , password :: Text
+  }
+  deriving (Show, Generic)
+
 instance FromRow User where
-  fromRow = User <$> field <*> field
+  fromRow = User <$> field <*> field <*> field <*> field
+
 instance ToJSON User
 
 main :: IO ()
 main = do
   conn <- open "simple.db"
-  execute_ conn "CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY, name TEXT)"
+  execute_ conn "CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY, name TEXT, email TEXT, password TEXT)"
   close conn
 
   scotty 8080 $ do
-    -- GET /users - list all users
     get "/users" $ do
       users <- liftIO $ do
         _conn <- open "simple.db"
-        us <- query_ _conn "SELECT id, name FROM users" :: IO [User]
+        us <- query_ _conn "SELECT id, name, email, password FROM users" :: IO [User]
         close _conn
         return us
       json users
 
-    -- POST /users/:name - insert a new user
-    post "/users/:name" $ do
-      name <- pathParam "name"
-      liftIO $ do
+    post "/users/:name/:email/:password" $ do
+      _name <- pathParam "name" :: ActionM Text
+      _email <- pathParam "email" :: ActionM Text
+      _password <- pathParam "password" :: ActionM Text
+      _users <- liftIO $ do
         _conn <- open "simple.db"
-        execute _conn "INSERT INTO users (name) VALUES (?)" (Only (name :: Text))
-        close _conn
-      text ("Added user: " `TL.append` name)
+        _users <- query _conn "SELECT * FROM users WHERE email = ?" (Only _email) :: IO [User]
+        case _users of
+          [] -> do
+            execute _conn "INSERT INTO users (name, email, password) VALUES (?, ?, ?)" (_name, _email, _password)
+            close _conn
+          _ -> do
+            close _conn
+        return _users
+      if null _users
+        then text "User created successfully."
+        else text "User already exists."
