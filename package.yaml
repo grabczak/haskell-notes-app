@@ -26,6 +26,9 @@ dependencies:
   - megaparsec
   - text
   - scientific
+  - jwt
+  - containers
+  - time
 
 ghc-options:
   - -Wall
