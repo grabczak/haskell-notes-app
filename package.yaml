@@ -20,11 +20,9 @@ description: Please see the README on GitHub at <https://github.com/grabczak/has
 
 dependencies:
   - base >= 4.7 && < 5
-  - servant
-  - servant-server
-  - warp
+  - scotty
+  - sqlite-simple
   - aeson
-  - wai
   - megaparsec
   - text
   - scientific

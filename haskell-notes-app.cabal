@@ -39,11 +39,9 @@ library
     , base >=4.7 && <5
     , megaparsec
     , scientific
-    , servant
-    , servant-server
+    , scotty
+    , sqlite-simple
     , text
-    , wai
-    , warp
   default-language: Haskell2010
 
 executable haskell-notes-app-exe
@@ -61,11 +59,9 @@ executable haskell-notes-app-exe
     , haskell-notes-app
     , megaparsec
     , scientific
-    , servant
-    , servant-server
+    , scotty
+    , sqlite-simple
     , text
-    , wai
-    , warp
   default-language: Haskell2010
 
 test-suite haskell-notes-app-test
@@ -87,12 +83,10 @@ test-suite haskell-notes-app-test
     , haskell-notes-app
     , megaparsec
     , scientific
-    , servant
-    , servant-server
+    , scotty
+    , sqlite-simple
     , test-framework >=0.8
     , test-framework-hunit >=0.3
     , test-framework-quickcheck2 >=0.3
     , text
-    , wai
-    , warp
   default-language: Haskell2010
