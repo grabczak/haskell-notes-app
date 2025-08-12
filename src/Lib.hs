@@ -16,20 +16,35 @@ import GHC.Generics
 import Servant
 import Servant.Auth.Server
 
-data User = User
+data UserAuth = UserAuth
+  { userName :: String
+  , userPassword :: String
+  }
+  deriving (Eq, Show, Generic, FromRow, FromJWT, FromJSON, ToJWT, ToJSON)
+
+data UserData = UserData
   { userId :: Int
   , userName :: String
   }
   deriving (Eq, Show, Generic, FromRow, FromJWT, FromJSON, ToJWT, ToJSON)
 
+data User = User
+  { userId :: Int
+  , userName :: String
+  , userPassword :: String
+  }
+  deriving (Eq, Show, Generic, FromRow, FromJWT, FromJSON, ToJWT, ToJSON)
+
 type API auths =
-  "register"
-    :> ReqBody '[JSON] User
+  "auth"
+    :> "register"
+    :> ReqBody '[JSON] UserAuth
     :> Post
         '[JSON]
         String
-    :<|> "login"
-      :> ReqBody '[JSON] User
+    :<|> "auth"
+      :> "login"
+      :> ReqBody '[JSON] UserAuth
       :> Post
           '[JSON]
           ( Headers
@@ -42,30 +57,45 @@ type API auths =
       :> "notes"
       :> Get '[JSON] String
 
-getUserById :: Int -> IO (Maybe User)
-getUserById _userId = do
+getUserByName :: String -> IO (Maybe User)
+getUserByName _userName = do
   conn <- open "simple.db"
-  res <- query conn "SELECT * FROM users WHERE userId = ?" (Only _userId) :: IO [User]
+  res <- query conn "SELECT * FROM users WHERE userName = ?" (Only _userName) :: IO [User]
   close conn
   return $ case res of
     [] -> Nothing
     (x : _) -> Just x
 
-register :: User -> Handler String
-register User{..} = do
-  liftIO $ do
-    conn <- open "simple.db"
-    execute conn "INSERT INTO users (userId, userName) VALUES (?, ?)" (userId, userName)
-    close conn
+insertUser :: UserAuth -> IO ()
+insertUser UserAuth{..} = do
+  conn <- open "simple.db"
+  execute conn "INSERT INTO users (userName, userPassword) VALUES (?, ?)" (userName, userPassword)
+  close conn
+
+register :: UserAuth -> Handler String
+register UserAuth{..} = do
+  mUser <- liftIO $ getUserByName userName
+  _ <- case mUser of
+    Just _ -> throwError err409{errBody = "User already exists"}
+    Nothing -> liftIO $ insertUser UserAuth{..}
   return "User registered successfully"
+
+getUserByNameAndPassword :: String -> String -> IO (Maybe User)
+getUserByNameAndPassword _userName _userPassword = do
+  conn <- open "simple.db"
+  res <- query conn "SELECT * FROM users WHERE userName = ? AND userPassword = ?" (_userName, _userPassword) :: IO [User]
+  close conn
+  return $ case res of
+    [] -> Nothing
+    (x : _) -> Just x
 
 login ::
   CookieSettings ->
   JWTSettings ->
-  User ->
+  UserAuth ->
   Handler (Headers '[Header "Set-Cookie" SetCookie, Header "Set-Cookie" SetCookie] String)
-login cookieSettings jwtSettings User{..} = do
-  mUser <- liftIO $ getUserById userId
+login cookieSettings jwtSettings UserAuth{..} = do
+  mUser <- liftIO $ getUserByNameAndPassword userName userPassword
   case mUser of
     Nothing -> throwError $ err401{errBody = "User not found"}
     Just user -> do

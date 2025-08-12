@@ -2,7 +2,7 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module Main where
+module Main (main) where
 
 import Database.SQLite.Simple (close, execute_, open)
 import Lib (API, login, notes, register)
@@ -16,7 +16,7 @@ server cookieSettings jwtSettings = register :<|> login cookieSettings jwtSettin
 main :: IO ()
 main = do
   conn <- open "simple.db"
-  execute_ conn "CREATE TABLE IF NOT EXISTS users (userId INTEGER PRIMARY KEY, userName TEXT NOT NULL)"
+  execute_ conn "CREATE TABLE IF NOT EXISTS users (userId INTEGER PRIMARY KEY, userName TEXT NOT NULL, userPassword TEXT NOT NULL)"
   close conn
 
   putStrLn "Server running on http://localhost:8080"
