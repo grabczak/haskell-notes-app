@@ -20,15 +20,17 @@ description: Please see the README on GitHub at <https://github.com/grabczak/has
 
 dependencies:
   - base >= 4.7 && < 5
-  - scotty
-  - sqlite-simple
   - aeson
+  - bytestring
   - megaparsec
-  - text
   - scientific
-  - jwt
-  - containers
-  - time
+  - servant
+  - servant-auth-server
+  - servant-server
+  - sqlite-simple
+  - text
+  - wai
+  - warp
 
 ghc-options:
   - -Wall

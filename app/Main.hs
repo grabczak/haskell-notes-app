@@ -1,98 +1,106 @@
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE TypeOperators #-}
 
-import Data.Aeson (ToJSON, toJSON)
-import qualified Data.Map as Map
-import qualified Data.Text as T
-import Data.Text.Lazy (Text)
-import qualified Data.Text.Lazy as TL
-import Data.Time.Clock.POSIX (getPOSIXTime)
-import Database.SQLite.Simple (
-  FromRow (..),
-  Only (Only),
-  close,
-  execute,
-  execute_,
-  field,
-  open,
-  query,
-  query_,
- )
-import GHC.Generics (Generic)
-import Web.JWT (ClaimsMap (..), JWTClaimsSet (..), claims, encodeSigned, hmacSecret, secondsSinceEpoch, stringOrURI)
-import Web.Scotty (ActionM, get, json, liftIO, pathParam, post, scotty, text)
+module Main where
+
+import Control.Monad.IO.Class
+import Data.Aeson
+import qualified Data.ByteString.Lazy.Char8 as BSC
+import Database.SQLite.Simple hiding ((:.))
+import GHC.Generics
+import Network.Wai.Handler.Warp (run)
+import Servant
+import Servant.Auth.Server
 
 data User = User
-  { id :: Int
-  , name :: Text
-  , email :: Text
-  , password :: Text
+  { userId :: Int
+  , userName :: String
   }
-  deriving (Show, Generic)
+  deriving (Eq, Show, Generic, FromRow, FromJWT, FromJSON, ToJWT, ToJSON)
 
-instance FromRow User where
-  fromRow = User <$> field <*> field <*> field <*> field
+getUser :: Int -> IO (Maybe User)
+getUser _userId = do
+  conn <- open "simple.db"
+  res <- query conn "SELECT * FROM users WHERE userId = ?" (Only _userId) :: IO [User]
+  close conn
+  return $ case res of
+    [] -> Nothing
+    (x : _) -> Just x
 
-instance ToJSON User
+type API auths =
+  "register"
+    :> ReqBody '[JSON] User
+    :> Post
+        '[JSON]
+        String
+    :<|> "login"
+      :> ReqBody '[JSON] User
+      :> Post
+          '[JSON]
+          ( Headers
+              '[ Header "Set-Cookie" SetCookie
+               , Header "Set-Cookie" SetCookie
+               ]
+              String
+          )
+    :<|> Auth auths User
+      :> "notes"
+      :> Get '[JSON] String
+
+server :: CookieSettings -> JWTSettings -> Server (API auths)
+server cookieSettings jwtSettings = registerHandler :<|> loginHandler cookieSettings jwtSettings :<|> notesHandler
+
+loginHandler ::
+  CookieSettings ->
+  JWTSettings ->
+  User ->
+  Handler (Headers '[Header "Set-Cookie" SetCookie, Header "Set-Cookie" SetCookie] String)
+loginHandler cookieSettings jwtSettings User{..} = do
+  mUser <- liftIO $ getUser userId
+  case mUser of
+    Nothing -> throwError $ err401{errBody = "User not found"}
+    Just user -> do
+      mLoginAccepted <- liftIO $ acceptLogin cookieSettings jwtSettings user
+      case mLoginAccepted of
+        Nothing -> throwError $ err401{errBody = "Login failed"}
+        Just x -> do
+          eJWT <- liftIO $ makeJWT user jwtSettings Nothing
+          case eJWT of
+            Left _ -> throwError $ err401{errBody = "JWT creation failed"}
+            Right r -> return $ x (BSC.unpack r)
+
+notesHandler :: AuthResult User -> Handler String
+notesHandler (Authenticated User{..}) = return $ "Hello " <> userName <> "!"
+notesHandler _ = throwError err400{errBody = "Authentication required"}
+
+registerHandler :: User -> Handler String
+registerHandler User{..} = do
+  liftIO $ do
+    conn <- open "simple.db"
+    execute conn "INSERT INTO users (userId, userName) VALUES (?, ?)" (userId, userName)
+    close conn
+  return "User registered successfully"
 
 main :: IO ()
 main = do
   conn <- open "simple.db"
-  execute_ conn "CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY, name TEXT, email TEXT, password TEXT)"
+  execute_ conn "CREATE TABLE IF NOT EXISTS users (userId INTEGER PRIMARY KEY, userName TEXT NOT NULL)"
   close conn
 
-  scotty 8080 $ do
-    get "/users" $ do
-      users <- liftIO $ do
-        _conn <- open "simple.db"
-        us <- query_ _conn "SELECT id, name, email, password FROM users" :: IO [User]
-        close _conn
-        return us
-      json users
+  putStrLn "Server running on http://localhost:8080"
 
-    post "/users/:name/:email/:password" $ do
-      _name <- pathParam "name" :: ActionM Text
-      _email <- pathParam "email" :: ActionM Text
-      _password <- pathParam "password" :: ActionM Text
-      _users <- liftIO $ do
-        _conn <- open "simple.db"
-        _users <- query _conn "SELECT * FROM users WHERE email = ?" (Only _email) :: IO [User]
-        case _users of
-          [] -> do
-            execute _conn "INSERT INTO users (name, email, password) VALUES (?, ?, ?)" (_name, _email, _password)
-            close _conn
-          _ -> do
-            close _conn
-        return _users
-      if null _users
-        then text "User created successfully."
-        else text "User already exists."
+  jwtSecretKey <- generateKey
+  let jwtSettings = defaultJWTSettings jwtSecretKey
+  let cookieSettings = defaultCookieSettings
+  let config = cookieSettings :. jwtSettings :. EmptyContext
 
-    get "/login/:email/:password" $ do
-      _email <- pathParam "email" :: ActionM Text
-      _password <- pathParam "password" :: ActionM Text
-      _users <- liftIO $ do
-        _conn <- open "simple.db"
-        _users <- query _conn "SELECT * FROM users WHERE email = ? AND password = ?" (_email, _password) :: IO [User]
-        close _conn
-        return _users
-      case _users of
-        [] -> text "Invalid email or password."
-        user : _ -> do
-          if _password == password user
-            then do
-              token <- liftIO $ generateToken user
-              json $ Map.fromList [("token" :: String, token)]
-            else text "Invalid email or password."
-
-jwtSecret :: T.Text
-jwtSecret = "super-secret-key"
-
-generateToken :: User -> IO T.Text
-generateToken user = do
-  let claimsSet =
-        mempty
-          { unregisteredClaims = ClaimsMap $ Map.fromList [("user_id", toJSON (Main.id user))]
-          }
-      key = hmacSecret jwtSecret
-  return $ encodeSigned key mempty claimsSet
+  run 8080
+    $ serveWithContext
+      (Proxy :: Proxy (API '[JWT, Cookie]))
+      config
+    $ server cookieSettings jwtSettings

@@ -25,6 +25,7 @@ source-repository head
 
 library
   exposed-modules:
+      API
       JSONCodec
       Lib
   other-modules:
@@ -37,14 +38,16 @@ library
   build-depends:
       aeson
     , base >=4.7 && <5
-    , containers
-    , jwt
+    , bytestring
     , megaparsec
     , scientific
-    , scotty
+    , servant
+    , servant-auth-server
+    , servant-server
     , sqlite-simple
     , text
-    , time
+    , wai
+    , warp
   default-language: Haskell2010
 
 executable haskell-notes-app-exe
@@ -59,15 +62,17 @@ executable haskell-notes-app-exe
   build-depends:
       aeson
     , base >=4.7 && <5
-    , containers
+    , bytestring
     , haskell-notes-app
-    , jwt
     , megaparsec
     , scientific
-    , scotty
+    , servant
+    , servant-auth-server
+    , servant-server
     , sqlite-simple
     , text
-    , time
+    , wai
+    , warp
   default-language: Haskell2010
 
 test-suite haskell-notes-app-test
@@ -86,16 +91,18 @@ test-suite haskell-notes-app-test
     , QuickCheck >=2.14
     , aeson
     , base >=4.7 && <5
-    , containers
+    , bytestring
     , haskell-notes-app
-    , jwt
     , megaparsec
     , scientific
-    , scotty
+    , servant
+    , servant-auth-server
+    , servant-server
     , sqlite-simple
     , test-framework >=0.8
     , test-framework-hunit >=0.3
     , test-framework-quickcheck2 >=0.3
     , text
-    , time
+    , wai
+    , warp
   default-language: Haskell2010
