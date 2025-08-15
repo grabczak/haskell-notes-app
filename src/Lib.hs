@@ -202,7 +202,14 @@ updateNoteById _noteId NoteData{..} = do
   close conn
 
 noteUpdateHandler :: AuthResult User -> Int -> NoteData -> Handler String
-noteUpdateHandler (Authenticated User{}) noteId note = do
+noteUpdateHandler (Authenticated User{userId}) noteId note = do
+  mNote <- liftIO $ getNoteById noteId
+  case mNote of
+    Nothing -> throwError err404{errBody = "Note not found"}
+    Just Note{userId = ownerId} ->
+      if userId == ownerId
+        then return ()
+        else throwError err403{errBody = "Access denied"}
   liftIO $ updateNoteById noteId note
   return "Note updated successfully"
 noteUpdateHandler _ _ _ = throwError err400{errBody = "Authentication required"}
@@ -214,7 +221,14 @@ deleteNoteById _noteId = do
   close conn
 
 noteDeleteHandler :: AuthResult User -> Int -> Handler String
-noteDeleteHandler (Authenticated User{}) noteId = do
+noteDeleteHandler (Authenticated User{userId}) noteId = do
+  mNote <- liftIO $ getNoteById noteId
+  case mNote of
+    Nothing -> throwError err404{errBody = "Note not found"}
+    Just Note{userId = ownerId} ->
+      if userId == ownerId
+        then return ()
+        else throwError err403{errBody = "Access denied"}
   liftIO $ deleteNoteById noteId
   return "Note deleted successfully"
 noteDeleteHandler _ _ = throwError err400{errBody = "Authentication required"}
