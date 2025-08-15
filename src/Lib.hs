@@ -12,6 +12,8 @@ module Lib (API, registerHandler, loginHandler, userGetHandler, userUpdateHandle
 import Control.Monad.IO.Class
 import Data.Aeson
 import qualified Data.ByteString.Lazy.Char8 as BSC
+import Data.Password.Argon2
+import qualified Data.Text as T
 import Database.SQLite.Simple hiding ((:.))
 import GHC.Generics
 import Servant
@@ -67,6 +69,20 @@ type API auths =
     :<|> Auth auths User :> "user" :> "me" :> "notes" :> Capture "noteId" Int :> ReqBody '[JSON] NoteData :> Put '[JSON] String
     :<|> Auth auths User :> "user" :> "me" :> "notes" :> Capture "noteId" Int :> Delete '[JSON] String
 
+hash :: String -> IO T.Text
+hash _password = do
+  let plain = mkPassword (T.pack _password)
+  hashed <- hashPassword plain
+  return $ T.pack (show hashed)
+
+verify :: String -> T.Text -> IO Bool
+verify _password _hash = do
+  let plain = mkPassword (T.pack _password)
+  let hashed = read (T.unpack _hash)
+  return $ case checkPassword plain hashed of
+    PasswordCheckSuccess -> True
+    _ -> False
+
 getUserByName :: String -> IO (Maybe User)
 getUserByName _userName = do
   conn <- open "simple.db"
@@ -76,19 +92,11 @@ getUserByName _userName = do
     [] -> Nothing
     (x : _) -> Just x
 
-getUserByNameAndPassword :: String -> String -> IO (Maybe User)
-getUserByNameAndPassword _userName _userPassword = do
-  conn <- open "simple.db"
-  res <- query conn "SELECT * FROM users WHERE userName = ? AND userPassword = ?" (_userName, _userPassword) :: IO [User]
-  close conn
-  return $ case res of
-    [] -> Nothing
-    (x : _) -> Just x
-
 createUser :: UserAuth -> IO ()
 createUser UserAuth{..} = do
+  hashed <- hash userPassword
   conn <- open "simple.db"
-  execute conn "INSERT INTO users (userName, userPassword) VALUES (?, ?)" (userName, userPassword)
+  execute conn "INSERT INTO users (userName, userPassword) VALUES (?, ?)" (userName, hashed)
   close conn
 
 registerHandler :: UserAuth -> Handler String
@@ -105,18 +113,22 @@ loginHandler ::
   UserAuth ->
   Handler (Headers '[Header "Set-Cookie" SetCookie, Header "Set-Cookie" SetCookie] String)
 loginHandler cookieSettings jwtSettings UserAuth{..} = do
-  mUser <- liftIO $ getUserByNameAndPassword userName userPassword
+  mUser <- liftIO $ getUserByName userName
   case mUser of
     Nothing -> throwError $ err401{errBody = "User not found"}
-    Just user -> do
-      mLoginAccepted <- liftIO $ acceptLogin cookieSettings jwtSettings user
-      case mLoginAccepted of
-        Nothing -> throwError $ err401{errBody = "Login failed"}
-        Just x -> do
-          eJWT <- liftIO $ makeJWT user jwtSettings Nothing
-          case eJWT of
-            Left _ -> throwError $ err401{errBody = "JWT creation failed"}
-            Right r -> return $ x (BSC.unpack r)
+    Just user@User{userPassword = hashedPassword} -> do
+      isValid <- liftIO $ verify userPassword (T.pack hashedPassword)
+      if not isValid
+        then throwError $ err401{errBody = "Invalid password"}
+        else do
+          mLoginAccepted <- liftIO $ acceptLogin cookieSettings jwtSettings user
+          case mLoginAccepted of
+            Nothing -> throwError $ err401{errBody = "Login failed"}
+            Just x -> do
+              eJWT <- liftIO $ makeJWT user jwtSettings Nothing
+              case eJWT of
+                Left _ -> throwError $ err401{errBody = "JWT creation failed"}
+                Right r -> return $ x (BSC.unpack r)
 
 getUserDataById :: Int -> IO (Maybe UserData)
 getUserDataById _userId = do

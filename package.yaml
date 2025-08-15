@@ -23,6 +23,7 @@ dependencies:
   - aeson
   - bytestring
   - megaparsec
+  - password
   - scientific
   - servant
   - servant-auth-server

@@ -39,6 +39,7 @@ library
     , base >=4.7 && <5
     , bytestring
     , megaparsec
+    , password
     , scientific
     , servant
     , servant-auth-server
@@ -64,6 +65,7 @@ executable haskell-notes-app-exe
     , bytestring
     , haskell-notes-app
     , megaparsec
+    , password
     , scientific
     , servant
     , servant-auth-server
@@ -93,6 +95,7 @@ test-suite haskell-notes-app-test
     , bytestring
     , haskell-notes-app
     , megaparsec
+    , password
     , scientific
     , servant
     , servant-auth-server
