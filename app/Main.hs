@@ -26,7 +26,7 @@ main :: IO ()
 main = do
   conn <- open "simple.db"
   execute_ conn "CREATE TABLE IF NOT EXISTS users (userId INTEGER PRIMARY KEY, userName TEXT NOT NULL, userPassword TEXT NOT NULL)"
-  execute_ conn "CREATE TABLE IF NOT EXISTS notes (noteId INTEGER PRIMARY KEY, userId INTEGER NOT NULL, noteTitle TEXT NOT NULL, noteContent TEXT NOT NULL, noteTags TEXT NOT NULL, noteDeadline TEXT NOT NULL, FOREIGN KEY(userId) REFERENCES users(userId))"
+  execute_ conn "CREATE TABLE IF NOT EXISTS notes (noteId INTEGER PRIMARY KEY, userId INTEGER NOT NULL, noteTitle TEXT NOT NULL, noteContent TEXT NOT NULL, noteTags TEXT NOT NULL, noteDeadline TEXT NOT NULL, noteDone INTEGER NOT NULL, FOREIGN KEY(userId) REFERENCES users(userId))"
   close conn
 
   putStrLn "Server running on http://localhost:8080"

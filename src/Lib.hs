@@ -41,6 +41,7 @@ data NoteData = NoteData
   , noteContent :: String
   , noteTags :: String
   , noteDeadline :: String
+  , noteDone :: Int
   }
   deriving (Eq, Show, Generic, FromRow, FromJSON, ToJSON)
 
@@ -49,8 +50,9 @@ data Note = Note
   , userId :: Int
   , noteTitle :: String
   , noteContent :: String
-  , noteTags :: String
+  , noteTags :: String -- "["red", "green", "blue"]", SQLite does not support arrays, so we use a string representation
   , noteDeadline :: String
+  , noteDone :: Int -- 0 for not done, 1 for done, SQLite has its limitations with booleans
   }
   deriving (Eq, Show, Generic, FromRow, FromJSON, ToJSON)
 
@@ -162,8 +164,8 @@ addNote _userId NoteData{..} = do
   conn <- open "simple.db"
   execute
     conn
-    "INSERT INTO notes (userId, noteTitle, noteContent, noteTags, noteDeadline) VALUES (?, ?, ?, ?, ?)"
-    (_userId, noteTitle, noteContent, noteTags, noteDeadline)
+    "INSERT INTO notes (userId, noteTitle, noteContent, noteTags, noteDeadline, noteDone) VALUES (?, ?, ?, ?, ?, ?)"
+    (_userId, noteTitle, noteContent, noteTags, noteDeadline, noteDone)
   close conn
 
 notePostHandler :: AuthResult User -> NoteData -> Handler String
@@ -197,8 +199,8 @@ updateNoteById _noteId NoteData{..} = do
   conn <- open "simple.db"
   execute
     conn
-    "UPDATE notes SET noteTitle = ?, noteContent = ?, noteTags = ?, noteDeadline = ? WHERE noteId = ?"
-    (noteTitle, noteContent, noteTags, noteDeadline, _noteId)
+    "UPDATE notes SET noteTitle = ?, noteContent = ?, noteTags = ?, noteDeadline = ?, noteDone = ? WHERE noteId = ?"
+    (noteTitle, noteContent, noteTags, noteDeadline, noteDone, _noteId)
   close conn
 
 noteUpdateHandler :: AuthResult User -> Int -> NoteData -> Handler String
