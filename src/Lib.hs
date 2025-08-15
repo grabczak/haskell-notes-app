@@ -39,9 +39,9 @@ data User = User
 data NoteData = NoteData
   { noteTitle :: String
   , noteContent :: String
-  , noteTags :: String
-  , noteDeadline :: String
+  , noteDeadline :: Int
   , noteDone :: Int
+  , noteTags :: String
   }
   deriving (Eq, Show, Generic, FromRow, FromJSON, ToJSON)
 
@@ -50,9 +50,9 @@ data Note = Note
   , userId :: Int
   , noteTitle :: String
   , noteContent :: String
-  , noteTags :: String -- "["red", "green", "blue"]", SQLite does not support arrays, so we use a string representation
-  , noteDeadline :: String
+  , noteDeadline :: Int -- POSIXTime, stored as an integer in SQLite
   , noteDone :: Int -- 0 for not done, 1 for done, SQLite has its limitations with booleans
+  , noteTags :: String -- "["red", "green", "blue"]", SQLite does not support arrays, so we use a string representation
   }
   deriving (Eq, Show, Generic, FromRow, FromJSON, ToJSON)
 
@@ -164,8 +164,8 @@ addNote _userId NoteData{..} = do
   conn <- open "simple.db"
   execute
     conn
-    "INSERT INTO notes (userId, noteTitle, noteContent, noteTags, noteDeadline, noteDone) VALUES (?, ?, ?, ?, ?, ?)"
-    (_userId, noteTitle, noteContent, noteTags, noteDeadline, noteDone)
+    "INSERT INTO notes (userId, noteTitle, noteContent, noteDeadline, noteDone, noteTags) VALUES (?, ?, ?, ?, ?, ?)"
+    (_userId, noteTitle, noteContent, noteDeadline, noteDone, noteTags)
   close conn
 
 notePostHandler :: AuthResult User -> NoteData -> Handler String
@@ -199,8 +199,8 @@ updateNoteById _noteId NoteData{..} = do
   conn <- open "simple.db"
   execute
     conn
-    "UPDATE notes SET noteTitle = ?, noteContent = ?, noteTags = ?, noteDeadline = ?, noteDone = ? WHERE noteId = ?"
-    (noteTitle, noteContent, noteTags, noteDeadline, noteDone, _noteId)
+    "UPDATE notes SET noteTitle = ?, noteContent = ?, noteDeadline = ?, noteDone = ?, noteTags = ? WHERE noteId = ?"
+    (noteTitle, noteContent, noteDeadline, noteDone, noteTags, _noteId)
   close conn
 
 noteUpdateHandler :: AuthResult User -> Int -> NoteData -> Handler String
