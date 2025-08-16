@@ -21,11 +21,10 @@ main = do
 
   putStrLn ("Server running on port " ++ show port)
 
-  let cookieSettings = defaultCookieSettings
-
   jwtSecretKey <- generateKey
-  let jwtSettings = defaultJWTSettings jwtSecretKey
 
+  let cookieSettings = defaultCookieSettings
+  let jwtSettings = defaultJWTSettings jwtSecretKey
   let config = cookieSettings :. jwtSettings :. EmptyContext
 
   run port

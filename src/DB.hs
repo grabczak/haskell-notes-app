@@ -43,8 +43,8 @@ createDb = withConnection dbName $ \conn -> do
       \ FOREIGN KEY(userId) REFERENCES users(userId))"
     ]
 
-insertUser :: UserAuth -> IO Int
-insertUser UserAuth{..} = do
+insertUser :: Login -> IO Int
+insertUser Login{..} = do
   hashedPassword <- hash userPassword
   conn <- open dbName
   execute conn "INSERT INTO users (userName, userPassword) VALUES (?, ?)" (userName, hashedPassword)
@@ -52,19 +52,19 @@ insertUser UserAuth{..} = do
   close conn
   return $ fromIntegral userId
 
-selectUserByName :: String -> IO (Maybe UserData)
+selectUserByName :: String -> IO (Maybe User)
 selectUserByName userName = do
   conn <- open dbName
-  res <- query conn "SELECT userId, userName FROM users WHERE userName = ?" (Only userName) :: IO [UserData]
+  res <- query conn "SELECT userId, userName FROM users WHERE userName = ?" (Only userName) :: IO [User]
   close conn
   return $ case res of
     [] -> Nothing
     (x : _) -> Just x
 
-selectUserById :: Int -> IO (Maybe UserData)
+selectUserById :: Int -> IO (Maybe User)
 selectUserById userId = do
   conn <- open dbName
-  res <- query conn "SELECT userId, userName FROM users WHERE userId = ?" (Only userId) :: IO [UserData]
+  res <- query conn "SELECT userId, userName FROM users WHERE userId = ?" (Only userId) :: IO [User]
   close conn
   return $ case res of
     [] -> Nothing
@@ -73,14 +73,14 @@ selectUserById userId = do
 selectUserPasswordById :: Int -> IO (Maybe String)
 selectUserPasswordById userId = do
   conn <- open dbName
-  res <- query conn "SELECT * FROM users WHERE userId = ?" (Only userId) :: IO [User]
+  res <- query conn "SELECT userName, userPassword FROM users WHERE userId = ?" (Only userId) :: IO [Login]
   close conn
   return $ case res of
     [] -> Nothing
-    (User{userPassword} : _) -> Just userPassword
+    (Login{userPassword} : _) -> Just userPassword
 
-updateUserById :: Int -> UserAuth -> IO ()
-updateUserById userId UserAuth{..} = do
+updateUserById :: Int -> Login -> IO ()
+updateUserById userId Login{..} = do
   conn <- open dbName
   execute conn "UPDATE users SET userName = ?, userPassword = ? WHERE userId = ?" (userName, userPassword, userId)
   close conn
@@ -92,8 +92,8 @@ selectNotesByUserId userId = do
   close conn
   return res
 
-insertNote :: Int -> NoteData -> IO Int
-insertNote userId NoteData{..} = do
+insertNote :: Int -> NewNote -> IO Int
+insertNote userId NewNote{..} = do
   conn <- open dbName
   execute
     conn
@@ -112,8 +112,8 @@ selectNoteById noteId = do
     [] -> Nothing
     (x : _) -> Just x
 
-updateNoteById :: Int -> NoteData -> IO ()
-updateNoteById noteId NoteData{..} = do
+updateNoteById :: Int -> NewNote -> IO ()
+updateNoteById noteId NewNote{..} = do
   conn <- open dbName
   execute
     conn

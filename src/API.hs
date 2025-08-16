@@ -7,10 +7,9 @@
 module API (
   API,
   User (..),
-  UserAuth (..),
-  UserData (..),
+  Login (..),
   Note (..),
-  NoteData (..),
+  NewNote (..),
 ) where
 
 import Data.Aeson
@@ -19,31 +18,15 @@ import GHC.Generics
 import Servant
 import Servant.Auth.Server
 
-data UserAuth = UserAuth
-  { userName :: String
-  , userPassword :: String
-  }
-  deriving (Eq, Show, Generic, FromRow, FromJWT, FromJSON, ToJWT, ToJSON)
-
-data UserData = UserData
-  { userId :: Int
-  , userName :: String
-  }
-  deriving (Eq, Show, Generic, FromRow, FromJWT, FromJSON, ToJWT, ToJSON)
-
 data User = User
   { userId :: Int
   , userName :: String
-  , userPassword :: String
   }
-  deriving (Eq, Show, Generic, FromRow, FromJWT, FromJSON, ToJWT, ToJSON)
+  deriving (Eq, Show, Generic, FromRow, FromJSON, ToJSON, FromJWT, ToJWT)
 
-data NoteData = NoteData
-  { noteTitle :: String
-  , noteContent :: String
-  , noteDeadline :: Int
-  , noteDone :: Int
-  , noteTags :: String
+data Login = Login
+  { userName :: String
+  , userPassword :: String
   }
   deriving (Eq, Show, Generic, FromRow, FromJSON, ToJSON)
 
@@ -58,14 +41,23 @@ data Note = Note
   }
   deriving (Eq, Show, Generic, FromRow, FromJSON, ToJSON)
 
+data NewNote = NewNote
+  { noteTitle :: String
+  , noteContent :: String
+  , noteDeadline :: Int
+  , noteDone :: Int
+  , noteTags :: String
+  }
+  deriving (Eq, Show, Generic, FromRow, FromJSON, ToJSON)
+
 type API auths =
-  "auth" :> "register" :> ReqBody '[JSON] UserAuth :> PostCreated '[JSON] UserData
-    :<|> "auth" :> "login" :> ReqBody '[JSON] UserAuth :> Post '[JSON] (Headers '[Header "Set-Cookie" SetCookie, Header "Set-Cookie" SetCookie] String)
-    :<|> Auth auths UserData :> "user" :> "me" :> Get '[JSON] UserData
-    :<|> Auth auths UserData :> "user" :> "me" :> ReqBody '[JSON] UserAuth :> Put '[JSON] UserData
-    :<|> Auth auths UserData :> "user" :> "me" :> "notes" :> Get '[JSON] [Note]
-    :<|> Auth auths UserData :> "user" :> "me" :> "notes" :> ReqBody '[JSON] NoteData :> PostCreated '[JSON] Note
-    :<|> Auth auths UserData :> "user" :> "me" :> "notes" :> Capture "noteId" Int :> Get '[JSON] Note
-    :<|> Auth auths UserData :> "user" :> "me" :> "notes" :> Capture "noteId" Int :> ReqBody '[JSON] NoteData :> Put '[JSON] Note
+  "auth" :> "register" :> ReqBody '[JSON] Login :> PostCreated '[JSON] User
+    :<|> "auth" :> "login" :> ReqBody '[JSON] Login :> Post '[JSON] (Headers '[Header "Set-Cookie" SetCookie, Header "Set-Cookie" SetCookie] String)
+    :<|> Auth auths User :> "user" :> "me" :> Get '[JSON] User
+    :<|> Auth auths User :> "user" :> "me" :> ReqBody '[JSON] Login :> Put '[JSON] User
+    :<|> Auth auths User :> "user" :> "me" :> "notes" :> Get '[JSON] [Note]
+    :<|> Auth auths User :> "user" :> "me" :> "notes" :> ReqBody '[JSON] NewNote :> PostCreated '[JSON] Note
+    :<|> Auth auths User :> "user" :> "me" :> "notes" :> Capture "noteId" Int :> Get '[JSON] Note
+    :<|> Auth auths User :> "user" :> "me" :> "notes" :> Capture "noteId" Int :> ReqBody '[JSON] NewNote :> Put '[JSON] Note
     -- DeleteNoContent doesn't really work with cookies, so we use NoContent
-    :<|> Auth auths UserData :> "user" :> "me" :> "notes" :> Capture "noteId" Int :> Verb 'DELETE 204 '[JSON] NoContent
+    :<|> Auth auths User :> "user" :> "me" :> "notes" :> Capture "noteId" Int :> Verb 'DELETE 204 '[JSON] NoContent
