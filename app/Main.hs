@@ -4,39 +4,31 @@
 
 module Main (main) where
 
-import Database.SQLite.Simple (close, execute_, open)
-import Lib
-import Network.Wai.Handler.Warp (run)
+import Network.Wai.Handler.Warp
 import Servant
 import Servant.Auth.Server
 
-server :: CookieSettings -> JWTSettings -> Server (API auths)
-server cookieSettings jwtSettings =
-  registerHandler
-    :<|> loginHandler cookieSettings jwtSettings
-    :<|> userGetHandler
-    :<|> userUpdateHandler
-    :<|> getNotesHandler
-    :<|> notePostHandler
-    :<|> noteGetHandler
-    :<|> noteUpdateHandler
-    :<|> noteDeleteHandler
+import API
+import DB
+import Server
+
+port :: Int
+port = 8080
 
 main :: IO ()
 main = do
-  conn <- open "simple.db"
-  execute_ conn "CREATE TABLE IF NOT EXISTS users (userId INTEGER PRIMARY KEY, userName TEXT NOT NULL, userPassword TEXT NOT NULL)"
-  execute_ conn "CREATE TABLE IF NOT EXISTS notes (noteId INTEGER PRIMARY KEY, userId INTEGER NOT NULL, noteTitle TEXT NOT NULL, noteContent TEXT NOT NULL, noteDone INTEGER NOT NULL, noteDeadline INTEGER NOT NULL, noteTags TEXT NOT NULL, FOREIGN KEY(userId) REFERENCES users(userId))"
-  close conn
+  createDb
 
-  putStrLn "Server running on http://localhost:8080"
+  putStrLn ("Server running on port " ++ show port)
+
+  let cookieSettings = defaultCookieSettings
 
   jwtSecretKey <- generateKey
   let jwtSettings = defaultJWTSettings jwtSecretKey
-  let cookieSettings = defaultCookieSettings
+
   let config = cookieSettings :. jwtSettings :. EmptyContext
 
-  run 8080
+  run port
     $ serveWithContext
       (Proxy :: Proxy (API '[JWT, Cookie]))
       config

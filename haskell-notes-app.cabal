@@ -25,6 +25,9 @@ source-repository head
 
 library
   exposed-modules:
+      API
+      DB
+      Handlers
       JSONCodec
       Lib
   other-modules:
@@ -53,6 +56,7 @@ library
 executable haskell-notes-app-exe
   main-is: Main.hs
   other-modules:
+      Server
       Paths_haskell_notes_app
   autogen-modules:
       Paths_haskell_notes_app
