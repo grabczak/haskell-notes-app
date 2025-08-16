@@ -81,8 +81,9 @@ selectUserPasswordById userId = do
 
 updateUserById :: Int -> Login -> IO ()
 updateUserById userId Login{..} = do
+  hashedPassword <- hash userPassword
   conn <- open dbName
-  execute conn "UPDATE users SET userName = ?, userPassword = ? WHERE userId = ?" (userName, userPassword, userId)
+  execute conn "UPDATE users SET userName = ?, userPassword = ? WHERE userId = ?" (userName, hashedPassword, userId)
   close conn
 
 selectNotesByUserId :: Int -> IO [Note]
