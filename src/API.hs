@@ -59,12 +59,13 @@ data Note = Note
   deriving (Eq, Show, Generic, FromRow, FromJSON, ToJSON)
 
 type API auths =
-  "auth" :> "register" :> ReqBody '[JSON] UserAuth :> Post '[JSON] String
+  "auth" :> "register" :> ReqBody '[JSON] UserAuth :> PostCreated '[JSON] UserData
     :<|> "auth" :> "login" :> ReqBody '[JSON] UserAuth :> Post '[JSON] (Headers '[Header "Set-Cookie" SetCookie, Header "Set-Cookie" SetCookie] String)
-    :<|> Auth auths User :> "user" :> "me" :> Get '[JSON] UserData
-    :<|> Auth auths User :> "user" :> "me" :> ReqBody '[JSON] UserAuth :> Put '[JSON] String
-    :<|> Auth auths User :> "user" :> "me" :> "notes" :> Get '[JSON] [Note]
-    :<|> Auth auths User :> "user" :> "me" :> "notes" :> ReqBody '[JSON] NoteData :> Post '[JSON] String
-    :<|> Auth auths User :> "user" :> "me" :> "notes" :> Capture "noteId" Int :> Get '[JSON] Note
-    :<|> Auth auths User :> "user" :> "me" :> "notes" :> Capture "noteId" Int :> ReqBody '[JSON] NoteData :> Put '[JSON] String
-    :<|> Auth auths User :> "user" :> "me" :> "notes" :> Capture "noteId" Int :> Delete '[JSON] String
+    :<|> Auth auths UserData :> "user" :> "me" :> Get '[JSON] UserData
+    :<|> Auth auths UserData :> "user" :> "me" :> ReqBody '[JSON] UserAuth :> Put '[JSON] UserData
+    :<|> Auth auths UserData :> "user" :> "me" :> "notes" :> Get '[JSON] [Note]
+    :<|> Auth auths UserData :> "user" :> "me" :> "notes" :> ReqBody '[JSON] NoteData :> PostCreated '[JSON] Note
+    :<|> Auth auths UserData :> "user" :> "me" :> "notes" :> Capture "noteId" Int :> Get '[JSON] Note
+    :<|> Auth auths UserData :> "user" :> "me" :> "notes" :> Capture "noteId" Int :> ReqBody '[JSON] NoteData :> Put '[JSON] Note
+    -- DeleteNoContent doesn't really work with cookies, so we use NoContent
+    :<|> Auth auths UserData :> "user" :> "me" :> "notes" :> Capture "noteId" Int :> Verb 'DELETE 204 '[JSON] NoContent
