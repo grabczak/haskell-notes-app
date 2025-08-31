@@ -26,22 +26,25 @@ dbName = "app.db"
 
 createDb :: IO ()
 createDb = withConnection dbName $ \conn -> do
-  mapM_
-    (execute_ conn)
-    [ "CREATE TABLE IF NOT EXISTS users ( \
-      \ userId INTEGER PRIMARY KEY, \
-      \ userName TEXT NOT NULL, \
-      \ userPassword TEXT NOT NULL)"
-    , "CREATE TABLE IF NOT EXISTS notes ( \
-      \ noteId INTEGER PRIMARY KEY, \
-      \ userId INTEGER NOT NULL, \
-      \ noteTitle TEXT NOT NULL, \
-      \ noteContent TEXT NOT NULL, \
-      \ noteDone INTEGER NOT NULL, \
-      \ noteDeadline INTEGER NOT NULL, \
-      \ noteTags TEXT NOT NULL, \
-      \ FOREIGN KEY(userId) REFERENCES users(userId))"
-    ]
+  execute_ conn $
+    Query $
+      "CREATE TABLE IF NOT EXISTS users ("
+        <> "userId INTEGER PRIMARY KEY AUTOINCREMENT,"
+        <> "userName TEXT UNIQUE NOT NULL,"
+        <> "userPassword TEXT NOT NULL"
+        <> ")"
+  execute_ conn $
+    Query $
+      "CREATE TABLE IF NOT EXISTS notes ("
+        <> "noteId INTEGER PRIMARY KEY AUTOINCREMENT,"
+        <> "userId INTEGER NOT NULL,"
+        <> "noteTitle TEXT NOT NULL,"
+        <> "noteContent TEXT NOT NULL,"
+        <> "noteDone INTEGER NOT NULL DEFAULT 0,"
+        <> "noteDeadline INTEGER NOT NULL,"
+        <> "noteTags TEXT NOT NULL DEFAULT '',"
+        <> "FOREIGN KEY (userId) REFERENCES users (userId)"
+        <> ")"
 
 insertUser :: Login -> IO Int
 insertUser Login{..} = do
