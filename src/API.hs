@@ -55,7 +55,7 @@ type API auths =
     :<|> "auth" :> "login" :> ReqBody '[JSON] Login :> Post '[JSON] (Headers '[Header "Set-Cookie" SetCookie, Header "Set-Cookie" SetCookie] String)
     :<|> Auth auths User :> "user" :> "me" :> Get '[JSON] User
     :<|> Auth auths User :> "user" :> "me" :> ReqBody '[JSON] Login :> Put '[JSON] User
-    :<|> Auth auths User :> "user" :> "me" :> "notes" :> Get '[JSON] [Note]
+    :<|> Auth auths User :> "user" :> "me" :> "notes" :> QueryParam "done" Int :> Get '[JSON] [Note]
     :<|> Auth auths User :> "user" :> "me" :> "notes" :> ReqBody '[JSON] NewNote :> PostCreated '[JSON] Note
     :<|> Auth auths User :> "user" :> "me" :> "notes" :> Capture "noteId" Int :> Get '[JSON] Note
     :<|> Auth auths User :> "user" :> "me" :> "notes" :> Capture "noteId" Int :> ReqBody '[JSON] NewNote :> Put '[JSON] Note

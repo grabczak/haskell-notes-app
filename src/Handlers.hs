@@ -82,10 +82,13 @@ userPut (Authenticated User{userId}) Login{userName, userPassword} = do
     Just user -> return user
 userPut _ _ = throwError err400{errBody = "Authentication required"}
 
-notesGet :: AuthResult User -> Handler [Note]
-notesGet (Authenticated User{userId}) = do
-  liftIO $ selectNotesByUserId userId
-notesGet _ = throwError err400{errBody = "Authentication required"}
+notesGet :: AuthResult User -> Maybe Int -> Handler [Note]
+notesGet (Authenticated User{userId}) done = do
+  notes <- liftIO $ selectNotesByUserId userId
+  return $ case done of
+    Just d -> filter (\Note{noteDone} -> noteDone == d) notes
+    Nothing -> notes
+notesGet _ _ = throwError err400{errBody = "Authentication required"}
 
 notePost :: AuthResult User -> NewNote -> Handler Note
 notePost (Authenticated User{userId}) note = do
